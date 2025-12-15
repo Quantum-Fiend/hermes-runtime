@@ -13,30 +13,35 @@ if %errorlevel% neq 0 (
     echo Since you cannot compile the code right now, here is what the output WOULD look like:
     echo.
     echo ==================================================
-    echo    HERMES Binary Runtime - Core Simulator (v0.1)  
+    echo    HERMES Binary Runtime - CLI Control Plane      
     echo ==================================================
-    echo Running on Windows host.
-    echo Starting Policy Engine simulation...
+    echo [INFO] Policy Path: "../../scripting/lua/policy.lua"
+    echo [INFO] Target:      "simulation_target"
+    echo [INFO] Mode:        Simulation (Windows Host)
+    echo [CORE] Loading policy...
+    echo [CORE] Policy loaded successfully.
     echo.
-    echo [SIM] Loading policy from: scripting/lua/policy.lua
-    echo.
-    echo [SIM] Beginning Event Stream Processing:
+    echo [CORE] Beginning Event Stream Processing:
     echo ----------------------------------------
     echo [EVENT] Syscall: Open | Context: Opening /etc/passwd
     echo [LUA POLICY] Analyzing syscall: Open
+    echo [LUA POLICY] Args: 0, 0, 0, 0, 0, 0
     echo    -> Decision: Allow
     echo ----------------------------------------
     echo [EVENT] Syscall: Execve | Context: Attempting execve(/bin/sh)
     echo [LUA POLICY] Analyzing syscall: Execve
+    echo [LUA POLICY] Args: 0, 0, 0, 0, 0, 0
     echo [LUA POLICY] WARNING: Process attempting execution!
     echo    -> Decision: Allow
     echo ----------------------------------------
     echo.
-    echo [SIM] Simulation Complete.
+    echo [CORE] Simulation Complete.
     pause
     exit /b
 )
 
 :: Run the real simulator if Rust is present
-cargo run --bin hermes
+:: Note: The default policy path in src/main.rs assumes a specific CWD.
+:: We explicitly pass the path relative to core/rust
+cargo run --bin hermes -- --policy ../../scripting/lua/policy.lua --target ../../demo/opaque_client/client
 pause

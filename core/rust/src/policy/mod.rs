@@ -16,24 +16,41 @@ impl PolicyEngine {
     }
 
     pub fn evaluate(&self, syscall: Syscall, args: [u64; 6]) -> Result<MediationAction> {
-        // This is a simplified interface. In a real impl, we'd pass a context object.
         let globals = self.lua.globals();
         
         let handler: Function = match globals.get("on_syscall") {
             Ok(f) => f,
-            Err(_) => return Ok(MediationAction::Allow), // No handler defined
+            Err(_) => {
+                // If no handler is defined, default to ALLOW (fail-open) or BLOCK (fail-closed)
+                // For a general runtime, fail-open is safer for stability unless specified otherwise.
+                return Ok(MediationAction::Allow); 
+            }
         };
 
-        // Convert syscall to string for Lua
+        // Convert syscall to string
         let syscall_name = format!("{:?}", syscall);
         
-        // Call Lua function: on_syscall(name, arg1, arg2, ...)
-        // For simplicity, just passing name here.
-        let action: String = handler.call(syscall_name)?;
+        // Pass arguments as a Lua table (1-based index)
+        // Lua uses 1-based indexing, but we'll specificy 6 separate args for simplicity or a table.
+        // Let's pass them as a table for cleaner Lua code: on_syscall(name, {arg1, arg2...})
+        let args_vec = args.to_vec();
 
-        match action.as_str() {
-            "BLOCK" => Ok(MediationAction::Block(-1)),
-            _ => Ok(MediationAction::Allow),
+        // Call Lua function: on_syscall(name, args_table)
+        let action: String = handler.call((syscall_name, args_vec))?;
+
+        // Parse Action String
+        // Format can be: "ALLOW", "BLOCK", "MODIFY_ARG:<idx>:<val>"
+        if action == "ALLOW" {
+            Ok(MediationAction::Allow)
+        } else if action == "BLOCK" {
+            Ok(MediationAction::Block(-1)) 
+        } else if action.starts_with("MODIFY_ARG") {
+            // Very basic parsing for demo: "MODIFY_ARG:0:12345"
+            // Production TODO: proper parsing logic
+            Ok(MediationAction::ModifyArgs([None, None, None, None, None, None]))
+        } else {
+            // Default safe fallback
+            Ok(MediationAction::Allow) 
         }
     }
 }
@@ -46,7 +63,7 @@ mod tests {
     fn test_allow_default() {
         let engine = PolicyEngine::new().unwrap();
         let script = r#"
-            function on_syscall(name)
+            function on_syscall(name, args)
                 return "ALLOW"
             end
         "#;
@@ -63,7 +80,7 @@ mod tests {
     fn test_block_specific_syscall() {
         let engine = PolicyEngine::new().unwrap();
         let script = r#"
-            function on_syscall(name)
+            function on_syscall(name, args)
                 if name == "Open" then
                     return "BLOCK"
                 end
@@ -77,6 +94,7 @@ mod tests {
             MediationAction::Block(_) => assert!(true),
             _ => panic!("Expected Block"),
         }
+    }
 
         // Verify other syscalls are allowed
         let action_read = engine.evaluate(Syscall::Read, [0; 6]).unwrap();
