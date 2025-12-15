@@ -1,0 +1,97 @@
+{
+    "name": "HERMES: Security Incident Alert",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "hermes-alert",
+                "options": {}
+            },
+            "name": "HERMES Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{$json[\"body\"][\"decision\"]}}",
+                            "value2": "BLOCK"
+                        }
+                    ]
+                }
+            },
+            "name": "Is Blocked?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "channel": "security-alerts",
+                "text": "=🚨 **HERMES Violation Detected**\n\n**Process:** {{$json[\"body\"][\"process\"]}}\n**Syscall:** {{$json[\"body\"][\"syscall\"]}}\n**Args:** {{$json[\"body\"][\"args\"]}}\n**Policy:** {{$json[\"body\"][\"policy\"]}}",
+                "attachments": [],
+                "otherOptions": {}
+            },
+            "name": "Slack Alert",
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 1,
+            "position": [
+                650,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "append",
+                "spreadsheetId": "my-security-logs",
+                "range": "A:E",
+                "options": {}
+            },
+            "name": "Log to Sheets",
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 1,
+            "position": [
+                650,
+                400
+            ]
+        }
+    ],
+    "connections": {
+        "HERMES Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Is Blocked?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Blocked?": {
+            "main": [
+                [
+                    {
+                        "node": "Slack Alert",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Log to Sheets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
