@@ -1,0 +1,23 @@
+# Rust
+target/
+**/*.rs.bk
+
+# C/Build
+build/
+*.o
+*.a
+hermes_runner
+hermes.exe
+client
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
