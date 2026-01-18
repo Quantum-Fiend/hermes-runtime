@@ -123,4 +123,4 @@ HERMES is designed to integrate with **n8n** for realtime security operations (S
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for architectural guidelines.
 
 ---
-*Built with ❤️ by [Your Name]*
+*Built with ❤️ by Tushar*
